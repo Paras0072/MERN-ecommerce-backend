@@ -19,8 +19,14 @@ exports.fetchAllProducts = async (req, res) => {
   // todo : on server will support multiple values
   // sort ={sort:"price",_order:"desc"}
   // pagination = {page:1,_limit:10}_page=1&-limit=10
-  let query = Product.find({deleted:{$ne:true}});
-  let totalProductQuery = Product.find({ deleted: { $ne: true } });
+ let condition={}
+ 
+  if(!req.query.admin){
+ condition.deleted = { $ne: true } ;
+ }
+ 
+  let query = Product.find(condition);
+  let totalProductQuery = Product.find(condition);
   if (req.query.category) {
     query = query.find({ category: req.query.category });
     totalProductQuery = totalProductQuery.find({
