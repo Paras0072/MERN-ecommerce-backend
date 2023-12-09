@@ -23,7 +23,13 @@ exports.createUser = async (req, res) => {
             res.status(400).json(err);
           } else {
             const token = jwt.sign(sanitizeUser(doc), SECRET_KEY);
-            res.status(201).json(token);
+            res
+            .cookie("jwt", token, {
+              expires: new Date(Date.now() + 3600000),
+              httpOnly: true,
+            })
+            .status(201)
+            .json(token);
           }
         });
       }
@@ -33,7 +39,13 @@ exports.createUser = async (req, res) => {
   }
 };
 exports.loginUser = async (req, res) => {
-  res.json(req.user);
+ res
+   .cookie("jwt", req.user.token, {
+     expires: new Date(Date.now() + 3600000),
+     httpOnly: true,
+   })
+   .status(201)
+   .json(req.user.token);
 };
 exports.checkUser = async (req, res) => {
   res.json({status:'success',user:req.user});
