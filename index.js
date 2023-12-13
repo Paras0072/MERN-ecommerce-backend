@@ -1,3 +1,4 @@
+require("dotenv").config();
 const express = require("express");
 const server = express();
 const mongoose = require("mongoose");
@@ -20,19 +21,52 @@ const cartRouter = require("./routes/Cart");
 const ordersRouter = require("./routes/Order");
 const { User } = require("./model/User");
 const { isAuth, sanitizeUser, cookieExtractor } = require("./services/common");
-const SECRET_KEY = "SECRET_KEY";
-
+const path =require('path')
 // JWT options
+// webhook
+
+const endpointSecret = process.env.ENDPOINT_SECRET;
+
+server.post(
+  "/webhook",
+  express.raw({ type: "application/json" }),
+  (request, response) => {
+    const sig = request.headers["stripe-signature"];
+
+    let event;
+
+    try {
+      event = stripe.webhooks.constructEvent(request.body, sig, endpointSecret);
+    } catch (err) {
+      response.status(400).send(`Webhook Error: ${err.message}`);
+      return;
+    }
+
+    // Handle the event
+    switch (event.type) {
+      case "payment_intent.succeeded":
+        const paymentIntentSucceeded = event.data.object;
+        // Then define and call a function to handle the event payment_intent.succeeded
+        break;
+      // ... handle other event types
+      default:
+        console.log(`Unhandled event type ${event.type}`);
+    }
+
+    // Return a 200 response to acknowledge receipt of the event
+    response.send();
+  }
+);
 
 const opts = {};
 opts.jwtFromRequest = cookieExtractor;
-opts.secretOrKey = SECRET_KEY;
+opts.secretOrKey = process.env.JWT_SECRET_KEY;
 // middlewares
-server.use(express.static("build"));
+server.use(express.static(path.resolve(__dirname,"build")))
 server.use(cookieParser());
 server.use(
   session({
-    secret: "keyboard cat",
+    secret: process.env.SESSION_SECRET_KEY,
     resave: false,
     saveUninitialized: false,
   })
@@ -45,8 +79,9 @@ server.use(
     exposedHeaders: ["X-Total-Count"],
   })
 );
-server.use(express.raw({ type: "application/json" }));
+
 server.use(express.json()); // to parse req.body
+
 server.use("/products", isAuth(), productsRouter.router);
 server.use("/categories", isAuth(), categoriesRouter.router);
 server.use("/brands", isAuth(), brandsRouter.router);
@@ -64,10 +99,11 @@ passport.use(
   ) {
     // bt dafault passport uses username
     try {
-      const user = await User.findOne({ email: email }).exec();
+      const user = await User.findOne({ email: email });
       if (!user) {
         done(null, false, { message: "Invalid Credentials" }); // for safety
       }
+ 
       crypto.pbkdf2(
         password,
         user.salt,
@@ -75,11 +111,16 @@ passport.use(
         32,
         "sha256",
         async function (err, hashedPassword) {
+           
           if (!crypto.timingSafeEqual(user.password, hashedPassword)) {
             return done(null, false, { message: "Invalid Credentials" });
+            
           }
-          const token = jwt.sign(sanitizeUser(user), SECRET_KEY);
-          done(null, { id: user.id, role: user.role }); // this line sends to serializer
+          const token = jwt.sign(
+            sanitizeUser(user),
+            process.env.JWT_SECRET_KEY
+          );
+          done(null, { id: user.id, role: user.role, token }); // this line sends to serializer
         }
       );
     } catch (err) {
@@ -118,9 +159,7 @@ passport.deserializeUser(function (user, cb) {
 // Payments
 
 // This is your test secret API key.
-const stripe = require("stripe")(
-  "pk_live_51OLLW1SGebimsUwfrNEcJqEhWpLsu8BXEExMnVG1ptWz1LJtg8AggkPWS3nAEHOJMyu5Eob7DhYS6KU62mEDN7bN00LZqc5HJr"
-);
+const stripe = require("stripe")(process.env.STRIPE_SERVER_KEY);
 
 server.post("/create-payment-intent", async (req, res) => {
   const { totalAmount } = req.body;
@@ -140,47 +179,12 @@ server.post("/create-payment-intent", async (req, res) => {
   });
 });
 
-// webhook
-
-const endpointSecret =
-  "whsec_0c7595e91c7cbf7799fdb5dfd43c91aa5a31b3d293cb836a306b0576a4c23616";
-
-server.post(
-  "/webhook",
-  express.raw({ type: "application/json" }),
-  (request, response) => {
-    const sig = request.headers["stripe-signature"];
-
-    let event;
-
-    try {
-      event = stripe.webhooks.constructEvent(request.body, sig, endpointSecret);
-    } catch (err) {
-      response.status(400).send(`Webhook Error: ${err.message}`);
-      return;
-    }
-
-    // Handle the event
-    switch (event.type) {
-      case "payment_intent.succeeded":
-        const paymentIntentSucceeded = event.data.object;
-        // Then define and call a function to handle the event payment_intent.succeeded
-        break;
-      // ... handle other event types
-      default:
-        console.log(`Unhandled event type ${event.type}`);
-    }
-
-    // Return a 200 response to acknowledge receipt of the event
-    response.send();
-  }
-);
 main().catch((err) => console.log(err));
 async function main() {
-  await mongoose.connect("mongodb://127.0.0.1:27017/ecommerce");
+  await mongoose.connect(process.env.MONGODB_URL);
   console.log("database connected");
 }
 
-server.listen(8080, () => {
+server.listen(process.env.PORT, () => {
   console.log("Server started");
 });
