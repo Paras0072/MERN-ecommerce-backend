@@ -1,11 +1,12 @@
-const mongoose = require("mongoose");
 const { Order } = require("../model/Order");
 const { Product } = require("../model/Product");
 const { User } = require("../model/User");
 exports.fetchOrdersByUser = async (req, res) => {
   const { id } = req.user;
+
   try {
-    const orders = await Order.find({ user:id });
+    const orders = await Order.find({ user: id }).exec();
+
     res.status(200).json(orders);
   } catch (err) {
     res.status(400).json(err);
@@ -15,12 +16,12 @@ exports.fetchOrdersByUser = async (req, res) => {
 exports.createOrder = async (req, res) => {
   // this product we have to get API body
   const order = new Order(req.body);
-   for (let item of order.items) {
-     let product = await Product.findOne({ _id: item.product.id });
-     product.$inc("stock", -1 * item.quantity);
-     // for optimum performance we should make inventory outside of product.
-     await product.save();
-   }
+  for (let item of order.items) {
+    let product = await Product.findOne({ _id: item.product.id });
+    product.$inc("stock", -1 * item.quantity);
+    // for optimum performance we should make inventory outside of product.
+    await product.save();
+  }
   try {
     const doc = await order.save();
     res.status(201).json(doc);
@@ -58,7 +59,7 @@ exports.fetchAllOrders = async (req, res) => {
   // pagination = {page:1,_limit:10}_page=1&-limit=10
   let query = Order.find({ deleted: { $ne: true } });
   let totalOrdersQuery = Order.find({ deleted: { $ne: true } });
-  
+
   if (req.query._sort && req.query._order) {
     query = query.sort({ [req.query._sort]: req.query._order });
   }

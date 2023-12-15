@@ -11,6 +11,7 @@ const crypto = require("crypto");
 const JwtStrategy = require("passport-jwt").Strategy;
 const ExtractJwt = require("passport-jwt").ExtractJwt;
 const cookieParser = require("cookie-parser");
+
 const { createProduct } = require("./controller/Product");
 const productsRouter = require("./routes/Products");
 const categoriesRouter = require("./routes/Category");
@@ -24,10 +25,11 @@ const { isAuth, sanitizeUser, cookieExtractor } = require("./services/common");
 const path =require('path');
 const { Order } = require("./model/Order");
 // JWT options
+
+
 // webhook
 
 const endpointSecret = process.env.ENDPOINT_SECRET;
-
 server.post(
   "/webhook",
   express.raw({ type: "application/json" }),
@@ -49,7 +51,7 @@ server.post(
         const paymentIntentSucceeded = event.data.object;
         const order = await Order.findById(paymentIntentSucceeded.metadata.orderId);
          order.paymentStatus ='received'
-await order.save();
+         await order.save();
         break;
       // ... handle other event types
       default:
@@ -92,8 +94,9 @@ server.use("/users", isAuth(), userRouter.router);
 server.use("/auth", authRouter.router);
 server.use("/cart", isAuth(), cartRouter.router);
 server.use("/orders", isAuth(), ordersRouter.router);
+
 //this line we add to make react router work in case of other routes doesent match
-server.get('*',(req,res)=>res.sendFile(path.resolve('build','index.html')))
+ server.get('*',(req,res)=>res.sendFile(path.resolve('build','index.html')))
 // Passport Strategy
 passport.use(
   "local",
@@ -162,16 +165,23 @@ passport.deserializeUser(function (user, cb) {
   });
 });
 // Payments
-
-// This is your test secret API key.
-const stripe = require("stripe")(process.env.STRIPE_SERVER_KEY);
+const stripe = require("stripe")
+//(process.env.STRIPE_SERVER_KEY);
+//("pk_test_51OLLW1SGebimsUwfMKdIWTg5eVVelhQ0fgJ7DXLuZvmK4OYWVot59c9pv6IhqcRHQvLAcsI9ozxu6bj9M8aQAUdW00siufNxZA");
+("sk_test_51OLLW1SGebimsUwfgpAf7jwK4zsEIxnlzNZL7NvHYVrhbXzfkZHDAKrs3XJT3QoOkSrtv4HYTvTyUIcT5ybKw28u00I6SRvDJV")
+const calculateOrderAmount = (items) => {
+  
+  return 1400;
+};
 
 server.post("/create-payment-intent", async (req, res) => {
-  const { totalAmount ,orderId} = req.body;
-
+  const { items } = req.body;
+ //const { totalAmount } = req.body;
+ const {orderId}=req.body
   // Create a PaymentIntent with the order amount and currency
   const paymentIntent = await stripe.paymentIntents.create({
-    amount: totalAmount * 100,
+    amount: calculateOrderAmount(items),
+    // amount: totalAmount * 100,
     currency: "inr",
     // In the latest version of the API, specifying the `automatic_payment_methods` parameter is optional because Stripe enables its functionality by default.
     automatic_payment_methods: {
@@ -186,6 +196,7 @@ server.post("/create-payment-intent", async (req, res) => {
     clientSecret: paymentIntent.client_secret,
   });
 });
+
 
 main().catch((err) => console.log(err));
 async function main() {
