@@ -9,7 +9,7 @@ const productSchema = new Schema({
     min: [0, "wrong min price"],
     max: [10000, "wrong max price"],
   },
-  discountedPercentage: {
+  discountPercentage: {
     type: Number,
     min: [1, "wrong min discount"],
     max: [99, "wrong max discount"],
@@ -31,15 +31,21 @@ const productSchema = new Schema({
   thumbnail: { type: String, required: true },
   images: { type: [String], required: true },
   colors: { type: [Schema.Types.Mixed] },
-  sizes: { type: [Schema.Types.Mixed]},
+  sizes: { type: [Schema.Types.Mixed] },
   highlights: { type: [String] },
+  discountPrice: { type: Number },
   deleted: { type: Boolean, default: false },
 });
 
-const virtual = productSchema.virtual('id');
-virtual.get(function(){
+const virtualId = productSchema.virtual('id');
+virtualId.get(function(){
     return this._id;
 })
+// we can't using the virtual fields better to mske this field at time of doc creation
+// const virtualDiscountPrice = productSchema.virtual("discountPrice");
+// virtualDiscountPrice.get(function () {
+//   return Math.round(this.price * (1 - this.discountedPercentage / 100));
+// });
 productSchema.set('toJSON',{
     virtuals:true,
     versionKey:false,

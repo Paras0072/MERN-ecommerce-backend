@@ -17,6 +17,7 @@ exports.fetchOrdersByUser = async (req, res) => {
 exports.createOrder = async (req, res) => {
   // this product we have to get API body
   const order = new Order(req.body);
+  // here we have to update stocks
   for (let item of order.items) {
     let product = await Product.findOne({ _id: item.product.id });
     product.$inc("stock", -1 * item.quantity);

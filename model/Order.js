@@ -1,13 +1,16 @@
 const mongoose = require("mongoose");
 const { Schema } = mongoose;
-
+const paymentMethods = {
+  values: ["cash", "card"],
+  message:'Enum validator failed for payment'
+};
 const orderSchema = new Schema(
   {
     items: { type: [Schema.Types.Mixed], required: true },
     totalAmount: { type: Number },
     totalItems: { type: Number },
     user: { type: String, ref: "User", required: true },
-    paymentMethod: { type: String, required: true },
+    paymentMethod: { type: String, required: true, enum: paymentMethods },
     paymentStatus: { type: String, default: "pending" },
     status: { type: String, default: "pending" },
     selectedAddress: { type: Schema.Types.Mixed, required: true },
