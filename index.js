@@ -165,25 +165,18 @@ passport.deserializeUser(function (user, cb) {
   });
 });
 // Payments
-const stripe = require("stripe")
-//(process.env.STRIPE_SERVER_KEY);
+const stripe = require("stripe")(process.env.STRIPE_SERVER_KEY);
 //("pk_test_51OLLW1SGebimsUwfMKdIWTg5eVVelhQ0fgJ7DXLuZvmK4OYWVot59c9pv6IhqcRHQvLAcsI9ozxu6bj9M8aQAUdW00siufNxZA");
-("sk_test_51OLLW1SGebimsUwfgpAf7jwK4zsEIxnlzNZL7NvHYVrhbXzfkZHDAKrs3XJT3QoOkSrtv4HYTvTyUIcT5ybKw28u00I6SRvDJV")
-const calculateOrderAmount = (items) => {
-  
-  return 1400;
-};
+//("sk_test_51OLLW1SGebimsUwfgpAf7jwK4zsEIxnlzNZL7NvHYVrhbXzfkZHDAKrs3XJT3QoOkSrtv4HYTvTyUIcT5ybKw28u00I6SRvDJV")
+
 
 server.post("/create-payment-intent", async (req, res) => {
-  const { items } = req.body;
- //const { totalAmount } = req.body;
- const {orderId}=req.body
+  const { totalAmount, orderId } = req.body;
+
   // Create a PaymentIntent with the order amount and currency
   const paymentIntent = await stripe.paymentIntents.create({
-    amount: calculateOrderAmount(items),
-    // amount: totalAmount * 100,
+    amount: totalAmount * 100, // for decimal compensation
     currency: "inr",
-    // In the latest version of the API, specifying the `automatic_payment_methods` parameter is optional because Stripe enables its functionality by default.
     automatic_payment_methods: {
       enabled: true,
     },
