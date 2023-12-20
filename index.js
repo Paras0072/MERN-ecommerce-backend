@@ -165,9 +165,10 @@ passport.deserializeUser(function (user, cb) {
   });
 });
 // Payments
-const stripe = require("stripe")(process.env.STRIPE_SERVER_KEY);
+const stripe = require("stripe")
+  // (process.env.STRIPE_SERVER_KEY);
 //("pk_test_51OLLW1SGebimsUwfMKdIWTg5eVVelhQ0fgJ7DXLuZvmK4OYWVot59c9pv6IhqcRHQvLAcsI9ozxu6bj9M8aQAUdW00siufNxZA");
-//("sk_test_51OLLW1SGebimsUwfgpAf7jwK4zsEIxnlzNZL7NvHYVrhbXzfkZHDAKrs3XJT3QoOkSrtv4HYTvTyUIcT5ybKw28u00I6SRvDJV")
+ ("sk_test_51OLLW1SGebimsUwfgpAf7jwK4zsEIxnlzNZL7NvHYVrhbXzfkZHDAKrs3XJT3QoOkSrtv4HYTvTyUIcT5ybKw28u00I6SRvDJV")
 
 
 server.post("/create-payment-intent", async (req, res) => {
